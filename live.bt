@@ -1,0 +1,148 @@
+#!/usr/bin/env bpftrace
+
+/*Positional arguments:
+  $1: SV ID string length
+  $2: SV ID reference target
+  $3: SV counter offset
+  $4: SV IRQ interface PID
+  $5: SV proceed PID
+*/
+
+BEGIN
+{
+  @sv_ether_proto = (uint64)47752;
+  @old_sv_counter_skb_push = 0;
+  @old_sv_counter_consume_skb = 0;
+  @len_sv_id = $1;
+  @stream_target = $2;
+  @sv_counter_offset = (uint64)$3;
+  @sv_irq_interface_pid = (uint64)$4;
+  @sv_proceed_pid = (uint64)$5;
+
+  @sv_iteration_skb_push = 0;
+  @sv_iteration_consume_skb = 0;
+  @sv_count = 0;
+  @sv_missed = 0;
+  @sv_dropped = 0; // Counter for dropped packets
+  @start = 1;
+  @stream_id_offset = 33;
+}
+
+kprobe:tpacket_rcv
+{
+  $skb = (struct sk_buff*)arg0;
+  $protocol = $skb->protocol;
+
+  if ($protocol == @sv_ether_proto) {
+    $data_sv_counter = $skb->head + $skb->mac_header + @sv_counter_offset;
+    $data_stream_id = $skb->head + $skb->mac_header + @stream_id_offset;
+
+    $sv_counter = (uint64)0;
+    unroll(2) {
+      $sv_counter = ($sv_counter << 8) + *(uint8*)$data_sv_counter;
+      $data_sv_counter += 1;
+    }
+    $stream_id = (uint64)0;
+    unroll($1) {
+      $stream_id = $stream_id + *(uint8*)$data_stream_id;
+      $data_stream_id += 1;
+    }
+    // First SV counter must start on the first SV we captured to avoid
+    // a false detection of SV drops
+    if(@start == 1){
+      @old_sv_counter_skb_push = $sv_counter;
+      @old_sv_counter_consume_skb = $sv_counter;
+      @start = 0;
+    }
+
+    if ($stream_id == @stream_target) {
+      @t1[$sv_counter, @sv_iteration_skb_push] = nsecs(tai);
+
+      // Check for SV drops
+      if ($sv_counter > @old_sv_counter_skb_push + 1) {
+        @sv_dropped += $sv_counter - @old_sv_counter_skb_push - 1;
+      }
+
+      if ($sv_counter != @old_sv_counter_skb_push) {
+        if ($sv_counter < @old_sv_counter_skb_push) {
+          @sv_iteration_skb_push += 1;
+        }
+        @old_sv_counter_skb_push = $sv_counter;
+      }
+    }
+  }
+}
+
+kprobe:consume_skb
+{
+  $skb = (struct sk_buff*)arg0;
+  $protocol = $skb->protocol;
+
+  if ($protocol == @sv_ether_proto && pid == @sv_proceed_pid) {
+    $data_sv_counter = $skb->head + $skb->mac_header + @sv_counter_offset;
+    $data_stream_id = $skb->head + $skb->mac_header + @stream_id_offset;
+
+    $sv_counter = (uint64)0;
+    unroll(2) {
+      $sv_counter = ($sv_counter << 8) + *(uint8*)$data_sv_counter;
+      $data_sv_counter += 1;
+    }
+
+    $stream_id = (uint64)0;
+    unroll($1) {
+      $stream_id = $stream_id + *(uint8*)$data_stream_id;
+      $data_stream_id += 1;
+    }
+
+    if ($stream_id == @stream_target) {
+
+      if (@t1[$sv_counter, @sv_iteration_consume_skb]) {
+        $t2 = nsecs(tai);
+        $tdiff = ($t2 - @t1[$sv_counter, @sv_iteration_consume_skb]) / 1000;
+        delete(@t1[$sv_counter, @sv_iteration_consume_skb]);
+
+        if ($sv_counter > @old_sv_counter_consume_skb + 1) {
+          @sv_dropped += $sv_counter - @old_sv_counter_consume_skb - 1;
+        }
+
+        if ($sv_counter != @old_sv_counter_consume_skb) {
+          if ($sv_counter < @old_sv_counter_consume_skb) {
+            @sv_iteration_consume_skb += 1;
+          }
+          @old_sv_counter_consume_skb = $sv_counter;
+        }
+        @sv_count += 1;
+        @latency = hist($tdiff);
+        @min_latency = min($tdiff);
+        @max_latency = max($tdiff);
+        @sum_latency = sum($tdiff);
+        @avg_latency = avg($tdiff);
+        @count_latency = count();
+      }
+      else {
+        @sv_missed += 1;
+      }
+    }
+  }
+}
+
+interval:s:1
+{
+    system("clear");
+    print(@latency);
+    printf("\033[1m\033[97m");
+    printf("SV received: %d\n", @sv_count);
+    printf("SV missed: %d\n", @sv_missed);
+    printf("SV dropped: %d\n", @sv_dropped);
+    printf("SV buffer fill: %d%\n", (len(@t1) / 100000) * 100);
+
+    if ((uint64)@count_latency) {
+        printf("Min Latency: %d us\n", (uint64)@min_latency);
+        printf("Max Latency: %d us\n", (uint64)@max_latency);
+        printf("Mean Latency: ");
+        print(@avg_latency);
+    } else {
+        printf("No SV collected.\n");
+    }
+    printf("\033[0m");
+}
