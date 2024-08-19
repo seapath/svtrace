@@ -96,6 +96,7 @@ def extract_sv_fields():
 
     sv_id =  packet.sv.svID
     sv_counter = packet.sv.smpCnt
+    print(f"Detected SV stream: {sv_id}")
     return sv_id, sv_counter
 
 def extract_virtio_pid():
