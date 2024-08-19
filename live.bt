@@ -11,10 +11,10 @@
 BEGIN
 {
   @sv_ether_proto = (uint64)47752;
-  @old_sv_counter_skb_push = 0;
-  @old_sv_counter_consume_skb = 0;
+  @old_sv_counter_skb_push = (uint64)0;
+  @old_sv_counter_consume_skb = (uint64)0;
   @len_sv_id = $1;
-  @stream_target = $2;
+  @stream_target = (uint64)$2;
   @sv_counter_offset = (uint64)$3;
   @sv_irq_interface_pid = (uint64)$4;
   @sv_proceed_pid = (uint64)$5;
@@ -23,7 +23,7 @@ BEGIN
   @sv_iteration_consume_skb = 0;
   @sv_count = 0;
   @sv_missed = 0;
-  @sv_dropped = 0; // Counter for dropped packets
+  @sv_dropped = (uint64)0; // Counter for dropped packets
   @start = 1;
   @stream_id_offset = 33;
 }
