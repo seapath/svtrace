@@ -2,6 +2,8 @@ import argparse
 import pyshark
 import subprocess
 import configparser
+import importlib.resources as pkg_resources
+import seapath_trace
 
 def live():
     process = run_command("live")
@@ -55,10 +57,16 @@ def run_command(command):
     sv_id, sv_counter = extract_sv_fields()
     sum_sv_id = sum([ord(char) for char in sv_id])
 
+    try:
+        bpf_script_path = pkg_resources.files(seapath_trace).joinpath(f'{command}.bt')
+    except FileNotFoundError as e:
+        print(f"Fatal: required bpftrace script for {command} command not found")
+        exit(1)
+
     if args.machine == 'hypervisor':
         sv_irq_pid = get_pid(sv_interface)
         qemu_pid = get_pid("qemu")
-        bpftrace_cmd = f"export BPFTRACE_MAX_MAP_KEYS=100000 && chrt -f 1 bpftrace --unsafe {command}.bt \
+        bpftrace_cmd = f"export BPFTRACE_MAX_MAP_KEYS=100000 && chrt -f 1 bpftrace --unsafe {bpf_script_path} \
             {len(sv_id)} \
             {sum_sv_id} \
             {sv_counter.pos} \
@@ -68,7 +76,7 @@ def run_command(command):
     elif args.machine == 'VM':
         virtio_input_pid = extract_virtio_pid()
 
-        bpftrace_cmd = f"export BPFTRACE_MAX_MAP_KEYS=100000 && chrt -f 1 bpftrace --unsafe {command}.bt \
+        bpftrace_cmd = f"export BPFTRACE_MAX_MAP_KEYS=100000 && chrt -f 1 bpftrace --unsafe {bpf_script_path} \
             {len(sv_id)} \
             {sum_sv_id} \
             {sv_counter.pos} \
