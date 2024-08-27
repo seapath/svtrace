@@ -28,14 +28,15 @@ def live():
         process.wait()
 
 def record():
-    output = ''
+    output = []
     process = run_command("record")
 
     try:
         print("Start recording. Hit CTRL + C to stop")
         while True:
-            output = process.stdout.readline() + output
-            if output == '' and process.poll() is not None:
+            line = process.stdout.readline()
+            output.append(line.strip())
+            if not line and process.poll() is not None:
                 break
 
         stderr_output = process.stderr.read()
@@ -43,10 +44,11 @@ def record():
             print(stderr_output.strip())
 
     except KeyboardInterrupt:
-        f = open(f"{args.out}results", "w")
-        f.write(output.strip())
-        f.close()
+        output = output[1:]
 
+        with open(f"{args.out}results", 'w') as f:
+            f.write('\n'.join(output))
+        f.close()
         print(f"Results saved to {args.out}results")
         print("Exiting...")
         process.terminate()
