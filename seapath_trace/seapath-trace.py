@@ -68,7 +68,7 @@ def run_command(command):
     if args.machine == 'hypervisor':
         sv_irq_pid = get_pid(sv_interface)
         qemu_pid = get_pid("qemu")
-        bpftrace_cmd = f"export BPFTRACE_MAX_MAP_KEYS=100000 && chrt -f 1 bpftrace --unsafe {bpf_script_path} \
+        bpftrace_cmd = f"export BPFTRACE_MAX_MAP_KEYS={sv_buffer_size} && chrt -f 1 bpftrace --unsafe {bpf_script_path} \
             {len(sv_id)} \
             {sum_sv_id} \
             {sv_counter.pos} \
@@ -78,7 +78,7 @@ def run_command(command):
     elif args.machine == 'VM':
         virtio_input_pid = extract_virtio_pid()
 
-        bpftrace_cmd = f"export BPFTRACE_MAX_MAP_KEYS=100000 && chrt -f 1 bpftrace --unsafe {bpf_script_path} \
+        bpftrace_cmd = f"export BPFTRACE_MAX_MAP_KEYS={sv_buffer_size} && chrt -f 1 bpftrace --unsafe {bpf_script_path} \
             {len(sv_id)} \
             {sum_sv_id} \
             {sv_counter.pos} \
@@ -207,7 +207,7 @@ if __name__ == "__main__":
     config = configparser.ConfigParser()
     config.read(args.conf)
     sv_interface = config.get('DEFAULT','SV_INTERFACE')
-
+    sv_buffer_size = config.get('DEFAULT','SV_BUFFER_SIZE')
 
     if args.record:
         record()
