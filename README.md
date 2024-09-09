@@ -1,6 +1,6 @@
-# seapath-trace
+# svtrace
 
-seapath-trace is a tool used to evaluate the performance of IEC61850
+svtrace is a tool used to evaluate the performance of IEC61850
 Sample Values kernel processing on a machine.
 
 ## Table of Contents
@@ -13,18 +13,18 @@ Sample Values kernel processing on a machine.
 
 ## Introduction
 
-The `seapath-trace` project is a tool focused on measuring the latency of
+The `svtrace` project is a tool focused on measuring the latency of
 IEC61850 Sample Values. Powered by bpftrace, it achieves to computes the
 transit latency of IEC61850 Sample Values from their arrival on the
 interface IRQ process, to their processing by the virtualization agent
 (currently vhost driver, hosted by qemu).
 
-seapath-trace is designed to work either on a physical machine
+svtrace is designed to work either on a physical machine
 (hypervisor) or Virtual Machine. Currently, only qemu using vhost-net
 drivers virtualization on the host side and virtio drivers on the VM side
 is supported.
 
-seapath-trace uses the power of bpftrace and Linux kprobes to achieve
+svtrace uses the power of bpftrace and Linux kprobes to achieve
 the measurement of Sample Values latency. Currently, on both physical
 and virtual machines, the following kprobes are used:
 * `tpacket_rcv` on SV arrival, in SV interface IRQ process
@@ -63,18 +63,18 @@ python3-setuptools
 tshark
 ```
 
-Then, follow these steps to install `seapath-trace`:
+Then, follow these steps to install `svtrace`:
 
 ```bash
-git clone https://github.com/seapath/seapath-trace.git
-cd seapath-trace
+git clone https://github.com/seapath/svtrace.git
+cd svtrace
 python3 setup.py install
 ```
 
 
 ## Usage
 
-The `seapath-trace.cfg` configuration file must be provided to seapath-trace.
+The `svtrace.cfg` configuration file must be provided to svtrace.
 The network interface used to receive the IEC61850 Sample Values must
 be set in the `SV_INTERFACE` field.
 
@@ -89,21 +89,21 @@ To start a measurement and print it directly in terminal, on a
 hypervisor use the following command:
 
 ```bash
-python3 seapath-trace.py --live --conf seapath-trace.cfg --machine hypervisor
+python3 svtrace.py --live --conf svtrace.cfg --machine hypervisor
 ```
 
-To exit seapath-trace, hit CTRL+C.
+To exit svtrace, hit CTRL+C.
 
 In the same way, to start a measurement and record it in a file, use
 the following command:
 
 ```bash
-python3 seapath-trace.py --record --conf seapath-trace.cfg --machine hypervisor
+python3 svtrace.py --record --conf svtrace.cfg --machine hypervisor
 ```
 
 Note: By default:
 * results are saved in the `/tmp/` directory.
-* seapath-trace is running in `live` mode.
+* svtrace is running in `live` mode.
 
 ## Release notes
 

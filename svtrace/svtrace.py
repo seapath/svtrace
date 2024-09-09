@@ -3,7 +3,7 @@ import pyshark
 import subprocess
 import configparser
 import importlib.resources as pkg_resources
-import seapath_trace
+import svtrace
 
 def live():
     process = run_command("live")
@@ -60,7 +60,7 @@ def run_command(command):
     sum_sv_id = sum([ord(char) for char in sv_id])
 
     try:
-        bpf_script_path = pkg_resources.files(seapath_trace).joinpath(f'{command}.bt')
+        bpf_script_path = pkg_resources.files(svtrace).joinpath(f'{command}.bt')
     except FileNotFoundError as e:
         print(f"Fatal: required bpftrace script for {command} command not found")
         exit(1)
@@ -192,14 +192,14 @@ def get_pid(process):
     return pid
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="seapath-trace - seapath-trace is a tool used to monitor IEC61850 SV network performance on a machine.")
+    parser = argparse.ArgumentParser(description="svtrace - svtrace is a tool used to monitor IEC61850 SV network performance on a machine.")
     group = parser.add_mutually_exclusive_group()
 
     group.add_argument("--live",action='store_true', help="Show live latency distribution. Default program behavior.")
     group.add_argument("--record",action='store_true', help="Record latency in file results")
-    parser.add_argument("--machine", required=True, choices=["hypervisor", "VM"], help="Type of machine seapath-trace is being executed (hypervisor/VM)")
+    parser.add_argument("--machine", required=True, choices=["hypervisor", "VM"], help="Type of machine svtrace is being executed (hypervisor/VM)")
 
-    parser.add_argument("--conf", required=True, help="Path to seapath-trace.cfg configuration file")
+    parser.add_argument("--conf", required=True, help="Path to svtrace.cfg configuration file")
     parser.add_argument("--out", default="/tmp/", help="Output results file for --record option")
 
     args = parser.parse_args()
