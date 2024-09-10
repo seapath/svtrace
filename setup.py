@@ -1,3 +1,7 @@
+# Copyright (C) 2024, RTE (http://www.rte-france.com)
+# Copyright (C) 2024 Savoir-faire Linux, Inc.
+# SPDX-License-Identifier: Apache-2.0
+
 from setuptools import setup, find_packages
 
 with open("README.md", "r") as fh:
