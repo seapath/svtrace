@@ -10,14 +10,14 @@ with open("README.md", "r") as fh:
 setup(
     name="svtrace",
     version="0.1",
-    packages=find_packages(),  # This should detect the 'svtrace' package
+    packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
     package_data={
-        'svtrace': ['*.bt', '*.cfg'],  # Ensure package data is included
+        'svtracing': ['*.bt', '*.cfg'],
     },
     install_requires=['pyshark'],
-    scripts=['svtrace/svtrace.py'],  # Point to the script inside the package
+    scripts=['svtracing/svtrace.py'],
     url="https://github.com/seapath/svtrace",
     license="Apache-2.0",
     long_description=long_description,

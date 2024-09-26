@@ -8,7 +8,7 @@ import pyshark
 import subprocess
 import configparser
 import importlib.resources as pkg_resources
-import svtrace
+import svtracing
 
 def live():
     process = run_command("live")
@@ -65,7 +65,7 @@ def run_command(command):
     sum_sv_id = sum([ord(char) for char in sv_id])
 
     try:
-        bpf_script_path = pkg_resources.files(svtrace).joinpath(f'{command}.bt')
+        bpf_script_path = pkg_resources.files(svtracing).joinpath(f'{command}.bt')
     except FileNotFoundError as e:
         print(f"Fatal: required bpftrace script for {command} command not found")
         exit(1)
