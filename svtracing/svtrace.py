@@ -72,13 +72,13 @@ def run_command(command):
 
     if args.machine == 'hypervisor':
         sv_irq_pid = get_pid(sv_interface)
-        qemu_pid = get_pid("qemu")
+        vhost_pid = get_pid("vhost")
         bpftrace_cmd = f"export BPFTRACE_MAX_MAP_KEYS={sv_buffer_size} && chrt -f 1 bpftrace --unsafe {bpf_script_path} \
             {len(sv_id)} \
             {sum_sv_id} \
             {sv_counter.pos} \
             {sv_irq_pid} \
-            {qemu_pid}"
+            {vhost_pid}"
 
     elif args.machine == 'VM':
         virtio_input_pid = extract_virtio_pid()
