@@ -10,6 +10,7 @@ import subprocess
 import configparser
 import importlib.resources as pkg_resources
 import svtracing
+import os
 
 def live():
     process = run_command("live")
@@ -71,32 +72,34 @@ def run_command(command):
         print(f"Fatal: required bpftrace script for {command} command not found")
         exit(1)
 
+    # Set up environment with BPFTRACE_MAX_MAP_KEYS
+    env = os.environ.copy()
+    env['BPFTRACE_MAX_MAP_KEYS'] = sv_buffer_size
+
     if args.machine == 'hypervisor':
         sv_irq_pid = get_pid(sv_interface)
         vhost_pid = get_pid("vhost")
-        bpftrace_cmd = f"export BPFTRACE_MAX_MAP_KEYS={sv_buffer_size} && chrt -f 1 bpftrace --unsafe {bpf_script_path} \
-            {len(sv_id)} \
-            {sum_sv_id} \
-            {sv_counter.pos} \
-            {sv_irq_pid} \
-            {vhost_pid}"
+        bpftrace_cmd = [
+            'chrt', '-f', '1', 'bpftrace', '--unsafe', str(bpf_script_path),
+            str(len(sv_id)), str(sum_sv_id), str(sv_counter.pos), 
+            str(sv_irq_pid), str(vhost_pid)
+        ]
 
     elif args.machine == 'VM':
         virtio_input_pid = extract_virtio_pid()
-
-        bpftrace_cmd = f"export BPFTRACE_MAX_MAP_KEYS={sv_buffer_size} && chrt -f 1 bpftrace --unsafe {bpf_script_path} \
-            {len(sv_id)} \
-            {sum_sv_id} \
-            {sv_counter.pos} \
-            {virtio_input_pid} \
-            {virtio_input_pid}"
+        bpftrace_cmd = [
+            'chrt', '-f', '1', 'bpftrace', '--unsafe', str(bpf_script_path),
+            str(len(sv_id)), str(sum_sv_id), str(sv_counter.pos), 
+            str(virtio_input_pid), str(virtio_input_pid)
+        ]
 
     process = subprocess.Popen(
         bpftrace_cmd,
-        shell=True,
+        shell=False,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        text=True
+        text=True,
+        env=env
     )
 
     return process
